@@ -10,6 +10,7 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
     NoiseTexture.cpp \
+    perlin.cpp \
     vertex.cpp \
     vertexcol.cpp \
     vertextex.cpp \
@@ -17,6 +18,7 @@ SOURCES += main.cpp \
 
 HEADERS += \
     NoiseTexture.h \
+    perlin.h \
     vertex.h \
     vertexcol.h \
     vertextex.h \

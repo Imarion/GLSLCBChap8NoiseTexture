@@ -40,7 +40,7 @@ private:
     void initMatrices();
 
     void ReadTexture(GLenum TextureUnit, GLenum TextureTarget, const QString& FileName, bool flip);
-    void GenerateTexture(GLenum TextureUnit, GLenum TextureTarget);
+    void GenerateTexture(float baseFreq, float persistence, int w, int h, bool periodic);
 
 protected:
     void resizeEvent(QResizeEvent *);

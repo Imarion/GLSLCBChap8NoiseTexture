@@ -14,6 +14,8 @@
 #include <cmath>
 #include <cstring>
 
+#include "perlin.h"
+
 MyWindow::~MyWindow()
 {
     if (mProgram != 0) delete mProgram;
@@ -76,8 +78,8 @@ void MyWindow::initialize()
     CreateVertexBuffer();
     initShaders();
     initMatrices();
-    ReadTexture(GL_TEXTURE0, GL_TEXTURE_2D, "../Media/brick1.jpg", false);
-
+    //ReadTexture(GL_TEXTURE0, GL_TEXTURE_2D, "../Media/brick1.jpg", false);
+    GenerateTexture(4.0f, 0.5f, 128, 128, true);
 
     glFrontFace(GL_CCW);
     glEnable(GL_DEPTH_TEST);
@@ -248,19 +250,67 @@ void MyWindow::ReadTexture(GLenum TextureUnit, GLenum TextureTarget, const QStri
     glTexParameteri(TextureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
-void MyWindow::GenerateTexture(GLenum TextureUnit, GLenum TextureTarget)
+void MyWindow::GenerateTexture(float baseFreq, float persistence, int w, int h, bool periodic)
 {
-    QImage TexImg;
+     int width  = w;
+     int height = h;
 
-    glActiveTexture(TextureUnit);
+     qDebug() << "Generating noise texture...";
+
+     //Perlin *perlin = new Perlin(4,4,1,94);
+     Perlin *perlin = new Perlin(2,8,2,1050);
+
+     GLubyte *data = new GLubyte[ width * height * 4 ];
+
+     float xFactor = 1.0f / (width - 1);
+     float yFactor = 1.0f / (height - 1);
+
+     for( int row = 0; row < height; row++ ) {
+       for( int col = 0 ; col < width; col++ ) {
+         float x = xFactor * col;
+         float y = yFactor * row;
+         float sum = 0.0f;
+         float freq = baseFreq;
+         float persist = persistence;
+         for( int oct = 0; oct < 4; oct++ ) {
+           QVector2D p(x * freq, y * freq);
+
+           float val = 0.0f;
+           if (periodic) {
+             val = perlin->Get(p.x(), p.y()) * persist;
+           } else {
+             val = perlin->Get(p.x(), p.y()) * persist;
+           }
+
+           sum += val;
+
+           float result = (sum + 1.0f) / 2.0f;
+
+           // Clamp strictly between 0 and 1
+           result = result > 1.0f ? 1.0f : result;
+           result = result < 0.0f ? 0.0f : result;
+
+           // Store in texture
+           data[((row * width + col) * 4) + oct] = (GLubyte) ( result * 255.0f );
+           freq *= 2.0f;
+           persist *= persistence;
+         }
+       }
+    }
+
+    glActiveTexture(GL_TEXTURE0);
+
     GLuint TexObject;
     glGenTextures(1, &TexObject);
-    glBindTexture(TextureTarget, TexObject);
-    mFuncs->glTexStorage2D(TextureTarget, 1, GL_RGB8, TexImg.width(), TexImg.height());
-    mFuncs->glTexSubImage2D(TextureTarget, 0, 0, 0, TexImg.width(), TexImg.height(), GL_BGRA, GL_UNSIGNED_BYTE, TexImg.bits());
-    //glTexImage2D(TextureTarget, 0, GL_RGB, TexImg.width(), TexImg.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, TexImg.bits());
-    glTexParameteri(TextureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(TextureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, TexObject);
+    mFuncs->glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
+    mFuncs->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,     GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,     GL_REPEAT);
+
+    delete [] data;
 }
 
 void MyWindow::keyPressEvent(QKeyEvent *keyEvent)
