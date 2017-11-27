@@ -258,7 +258,7 @@ void MyWindow::GenerateTexture(float baseFreq, float persistence, int w, int h, 
      qDebug() << "Generating noise texture...";
 
      //Perlin *perlin = new Perlin(4,4,1,94);
-     Perlin *perlin = new Perlin(2,8,2,1050);
+     Perlin *perlin = new Perlin(2,8,2,94);
 
      GLubyte *data = new GLubyte[ width * height * 4 ];
 
