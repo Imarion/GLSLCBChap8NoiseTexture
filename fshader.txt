@@ -24,6 +24,10 @@ uniform MaterialInfo Material;
 
 out vec4 FragColor;
 
+#define PI 3.14159265
+uniform vec4 SkyColor   = vec4 (0.3, 0.3, 0.9, 1.0);
+uniform vec4 CloudColor = vec4 (1.0, 1.0, 1.0, 1.0);
+
 void phongModel( vec4 position, vec3 normal, out vec3 ambAndDiff, out vec3 spec ) {
     vec3 s         = normalize(vec3(Light.Position - position));
     vec3 v         = normalize(-position.xyz); // In eyeCoords, the viewer is at the origin -> only take negation of eyeCoords vector
@@ -57,5 +61,7 @@ void main()
     FragColor     = (vec4(ambAndDiff, 1.0) * texColor) + vec4(spec, 1.0);
   */
     vec4 noise = texture(Tex1, TexCoord);
-    FragColor  = vec4( noise.aaa , 1.0 );
+    float t    = (cos(noise.g * PI) + 1.0) / 2.0;
+    vec4 color = mix (SkyColor, CloudColor, t);
+    FragColor  = vec4( color.rgb , 1.0 );
 }
