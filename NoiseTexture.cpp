@@ -14,6 +14,8 @@
 #include <cmath>
 #include <cstring>
 
+#include <gtc/noise.hpp>
+
 #include "perlin.h"
 
 MyWindow::~MyWindow()
@@ -183,10 +185,16 @@ void MyWindow::render()
         mProgram->setUniformValue("Light.Position",  worldLight );
         mProgram->setUniformValue("Light.Intensity", QVector3D(1.0f, 1.0f, 1.0f));
 
-        mProgram->setUniformValue("Material.Kd", 0.9f, 0.9f, 0.9f);
-        mProgram->setUniformValue("Material.Ks", 0.95f, 0.95f, 0.95f);
-        mProgram->setUniformValue("Material.Ka", 0.1f, 0.1f, 0.1f);
+//        mProgram->setUniformValue("Material.Kd", 0.9f, 0.9f, 0.9f);
+//        mProgram->setUniformValue("Material.Ks", 0.95f, 0.95f, 0.95f);
+//        mProgram->setUniformValue("Material.Ka", 0.1f, 0.1f, 0.1f);
+//        mProgram->setUniformValue("Material.Shininess", 100.0f);
+
+        mProgram->setUniformValue("Material.Kd", 1.0f, 1.0f, 1.0f);
+        mProgram->setUniformValue("Material.Ks", 1.0f, 1.0f, 1.0f);
+        mProgram->setUniformValue("Material.Ka", 1.0f, 1.0f, 1.0f);
         mProgram->setUniformValue("Material.Shininess", 100.0f);
+
 
         QMatrix4x4 mv1 = ViewMatrix * ModelMatrixCube;
         mProgram->setUniformValue("ModelViewMatrix", mv1);
@@ -252,50 +260,47 @@ void MyWindow::ReadTexture(GLenum TextureUnit, GLenum TextureTarget, const QStri
 
 void MyWindow::GenerateTexture(float baseFreq, float persistence, int w, int h, bool periodic)
 {
-     int width  = w;
-     int height = h;
+    int width = w;
+    int height = h;
 
-     qDebug() << "Generating noise texture...";
+    printf("Generating noise texture...");
 
-     //Perlin *perlin = new Perlin(4,4,1,94);
-     Perlin *perlin = new Perlin(2,8,2,94);
+    GLubyte *data = new GLubyte[ width * height * 4 ];
 
-     GLubyte *data = new GLubyte[ width * height * 4 ];
+    float xFactor = 1.0f / (width - 1);
+    float yFactor = 1.0f / (height - 1);
 
-     float xFactor = 1.0f / (width - 1);
-     float yFactor = 1.0f / (height - 1);
+    for( int row = 0; row < height; row++ ) {
+        for( int col = 0 ; col < width; col++ ) {
+            float x = xFactor * col;
+            float y = yFactor * row;
+            float sum = 0.0f;
+            float freq = baseFreq;
+            float persist = persistence;
+            for( int oct = 0; oct < 4; oct++ ) {
+                glm::vec2 p(x * freq, y * freq);
 
-     for( int row = 0; row < height; row++ ) {
-       for( int col = 0 ; col < width; col++ ) {
-         float x = xFactor * col;
-         float y = yFactor * row;
-         float sum = 0.0f;
-         float freq = baseFreq;
-         float persist = persistence;
-         for( int oct = 0; oct < 4; oct++ ) {
-           QVector2D p(x * freq, y * freq);
+                float val = 0.0f;
+                if (periodic) {
+                  val = glm::perlin(p, glm::vec2(freq)) * persist;
+                } else {
+                  val = glm::perlin(p) * persist;
+                }
 
-           float val = 0.0f;
-           if (periodic) {
-             val = perlin->Get(p.x(), p.y()) * persist;
-           } else {
-             val = perlin->Get(p.x(), p.y()) * persist;
-           }
+                sum += val;
 
-           sum += val;
+                float result = (sum + 1.0f) / 2.0f;
 
-           float result = (sum + 1.0f) / 2.0f;
+                // Clamp strictly between 0 and 1
+                result = result > 1.0f ? 1.0f : result;
+                result = result < 0.0f ? 0.0f : result;
 
-           // Clamp strictly between 0 and 1
-           result = result > 1.0f ? 1.0f : result;
-           result = result < 0.0f ? 0.0f : result;
-
-           // Store in texture
-           data[((row * width + col) * 4) + oct] = (GLubyte) ( result * 255.0f );
-           freq *= 2.0f;
-           persist *= persistence;
-         }
-       }
+                // Store in texture
+                data[((row * width + col) * 4) + oct] = (GLubyte) ( result * 255.0f );
+                freq *= 2.0f;
+                persist *= persistence;
+            }
+        }
     }
 
     glActiveTexture(GL_TEXTURE0);

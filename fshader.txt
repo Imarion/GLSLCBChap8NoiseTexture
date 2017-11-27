@@ -44,6 +44,7 @@ void phongModel( vec4 position, vec3 normal, out vec3 ambAndDiff, out vec3 spec 
 
 void main()
 {
+/*
     vec3 ambAndDiff, spec;
 
     if( gl_FrontFacing ) {
@@ -54,4 +55,7 @@ void main()
 
     vec4 texColor = texture(Tex1, TexCoord);
     FragColor     = (vec4(ambAndDiff, 1.0) * texColor) + vec4(spec, 1.0);
+  */
+    vec4 noise = texture(Tex1, TexCoord);
+    FragColor  = vec4( noise.aaa , 1.0 );
 }
